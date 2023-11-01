@@ -1,6 +1,10 @@
 magic
 ================
+<<<<<<< HEAD
 `magic` Tcl bindings for [libmagic](https://manned.org/libmagic.3).   
+=======
+Tcl bindings for [libmagic](https://manned.org/libmagic.3).   
+>>>>>>> 05c2368 (Update README)
 
 Tested on Mac OS X, should be working on Linux.
 
