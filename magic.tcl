@@ -46,7 +46,7 @@ proc magic::error {callinfo} {
 }
 
 proc magic::flags {dict flags} {
-    # Magic error
+    # Magic flags
     # 
     # dict  - constants magic.h
     # flags - list flags
@@ -220,8 +220,6 @@ oo::class create magic {
             $self destroy
         } on error {result options} {
             error [dict get $options -errorinfo]
-        } finally {
-            catch {close $fp}
         }
     }
 
