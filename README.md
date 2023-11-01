@@ -2,8 +2,7 @@ magic
 ================
 `magic` Tcl bindings for [libmagic](https://manned.org/libmagic.3).   
 
-Tested on Mac OS X, should be working on Linux.   
-_You could be able to build and make it working with Cygwin on Windows_.
+Tested on Mac OS X, should be working on Linux.
 
 Dependencies :
 -------------------------
