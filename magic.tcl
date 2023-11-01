@@ -201,7 +201,11 @@ oo::class create magic {
         try {
             magic_file [my cookie] $file
         } trap MAGIC_ERROR {} {
+<<<<<<< HEAD
             $self destroy
+=======
+            my destroy
+>>>>>>> ca9c25e (Cosmetic changes.)
         } on error {result options} {
             error [dict get $options -errorinfo]
         }
@@ -217,7 +221,11 @@ oo::class create magic {
         try {
             magic_buffer [my cookie] $buffer [string length $buffer]
         } trap MAGIC_ERROR {} {
+<<<<<<< HEAD
             $self destroy
+=======
+            my destroy
+>>>>>>> ca9c25e (Cosmetic changes.)
         } on error {result options} {
             error [dict get $options -errorinfo]
         }
@@ -233,7 +241,11 @@ oo::class create magic {
         try {
             magic_getflags [my cookie]
         } trap MAGIC_ERROR {} {
+<<<<<<< HEAD
             $self destroy
+=======
+            my destroy
+>>>>>>> ca9c25e (Cosmetic changes.)
         } on error {result options} {
             error [dict get $options -errorinfo]
         }
@@ -249,7 +261,11 @@ oo::class create magic {
             set flags [expr [join [magic::flags $_flags $list] " | "]]
             magic_setflags [my cookie] $flags
         } trap MAGIC_ERROR {} {
+<<<<<<< HEAD
             $self destroy
+=======
+            my destroy
+>>>>>>> ca9c25e (Cosmetic changes.)
         } on error {result options} {
             error [dict get $options -errorinfo]
         }
@@ -264,7 +280,11 @@ oo::class create magic {
         try {
             magic_getparam [my cookie] [dict get $_params $param] value
         } trap MAGIC_ERROR {} {
+<<<<<<< HEAD
             $self destroy
+=======
+            my destroy
+>>>>>>> ca9c25e (Cosmetic changes.)
         } on error {result options} {
             error [dict get $options -errorinfo]
         }
@@ -282,7 +302,11 @@ oo::class create magic {
         try {
             magic_setparam [my cookie] [dict get $_params $param] value
         } trap MAGIC_ERROR {} {
+<<<<<<< HEAD
             $self destroy
+=======
+            my destroy
+>>>>>>> ca9c25e (Cosmetic changes.)
         } on error {result options} {
             error [dict get $options -errorinfo]
         }
