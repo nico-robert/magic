@@ -48,3 +48,5 @@ Release :
 -------------------------
 *  **29-Oct-2023** : 1.0
     - Initial release.
+*  **02-Nov-2023** : 1.0.1
+    - Catching libmagic errors.
