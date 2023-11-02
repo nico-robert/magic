@@ -2,7 +2,10 @@
 # Distributed under MIT license. Please see LICENSE for details.
 # magic - Tcl bindings for libmagic (https://manned.org/libmagic.3).
 
-# 29-Oct-2023  : v1.0  Initial release
+# 29-Oct-2023  : v1.0   
+               # Initial release.
+# 02-Nov-2023  : v1.0.1 
+               # Catching libmagic errors.
 
 package require Tcl  8.6
 package require cffi 1.0
@@ -10,7 +13,7 @@ package require cffi 1.0
 namespace eval magic {
     variable libname         "libmagic"
     variable libmagicversion 545
-    variable version         1.0
+    variable version         1.0.1
 }
 
 proc magic::error {callinfo} {
@@ -200,8 +203,9 @@ oo::class create magic {
         # the filename argument, or NULL if an error occurred.
         try {
             magic_file [my cookie] $file
-        } trap MAGIC_ERROR {} {
+        } trap MAGIC_ERROR {msg} {
             my destroy
+            error "MAGIC_ERROR : '$msg'"
         } on error {result options} {
             error [dict get $options -errorinfo]
         }
@@ -216,8 +220,9 @@ oo::class create magic {
         # of the buffer argument with length bytes size.
         try {
             magic_buffer [my cookie] $buffer [string length $buffer]
-        } trap MAGIC_ERROR {} {
+        } trap MAGIC_ERROR {msg} {
             my destroy
+            error "MAGIC_ERROR : '$msg'"
         } on error {result options} {
             error [dict get $options -errorinfo]
         }
@@ -232,8 +237,9 @@ oo::class create magic {
         # Returns a value representing current flags set.
         try {
             magic_getflags [my cookie]
-        } trap MAGIC_ERROR {} {
+        } trap MAGIC_ERROR {msg} {
             my destroy
+            error "MAGIC_ERROR : '$msg'"
         } on error {result options} {
             error [dict get $options -errorinfo]
         }
@@ -244,12 +250,13 @@ oo::class create magic {
         # 
         # list - list flags
         #
-        # Returns nothing or an error if flags is sno
+        # Returns nothing or an error if flags is not knowed.
         try {
             set flags [expr [join [magic::flags $_flags $list] " | "]]
             magic_setflags [my cookie] $flags
-        } trap MAGIC_ERROR {} {
+        } trap MAGIC_ERROR {msg} {
             my destroy
+            error "MAGIC_ERROR : '$msg'"
         } on error {result options} {
             error [dict get $options -errorinfo]
         }
@@ -263,8 +270,9 @@ oo::class create magic {
         # Returns value
         try {
             magic_getparam [my cookie] [dict get $_params $param] value
-        } trap MAGIC_ERROR {} {
+        } trap MAGIC_ERROR {msg} {
             my destroy
+            error "MAGIC_ERROR : '$msg'"
         } on error {result options} {
             error [dict get $options -errorinfo]
         }
@@ -281,8 +289,9 @@ oo::class create magic {
         # Returns nothing
         try {
             magic_setparam [my cookie] [dict get $_params $param] value
-        } trap MAGIC_ERROR {} {
+        } trap MAGIC_ERROR {msg} {
             my destroy
+            error "MAGIC_ERROR : '$msg'"
         } on error {result options} {
             error [dict get $options -errorinfo]
         }
