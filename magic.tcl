@@ -129,7 +129,6 @@ cffi::enum sequence MagicParam {
 cffi::alias define MAGIC_COOKIE     {pointer.COOKIE  {onerror magic::error}}
 cffi::alias define MAGIC_INT_STATUS {int nonnegative {onerror magic::error}}
 cffi::alias define MAGIC_STR_STATUS {string          {onerror magic::error}}
-cffi::alias define MAGIC_STR_STATUS {string          {onerror magic::error}}
 cffi::alias define MAGIC_PARAM      {int             {enum MagicParam}}
 cffi::alias define MAGIC_FLAGS      {int bitmask     {enum MagicFlags} {default MAGIC_NONE}}
 
