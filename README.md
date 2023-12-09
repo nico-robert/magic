@@ -50,3 +50,6 @@ Release :
     - Initial release.
 *  **02-Nov-2023** : 1.0.1
     - Catching libmagic errors.
+*  **09-Dec-2023** : 1.0.2
+    - Replace tcl dictionaries by 'cffi::enum'.
+    - Cosmetic changes.
