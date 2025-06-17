@@ -2,15 +2,16 @@ magic
 ================
 Tcl bindings for [libmagic](https://manned.org/libmagic.3).   
 
-Tested on Mac OS X, should be working on Linux.
+Tested on macOS, should be working on Linux.
 
-Dependencies :
+Requirements :
 -------------------------
-- [Tcl cffi](https://cffi.magicsplat.com) >= 1.0
+- [Tcl](https://www.tcl.tk/) 8.6 or higher
+- [tcl-cffi](https://cffi.magicsplat.com) >= 2.0
 
 Prerequisites :
 -------------------------
-- On Mac OS X: `brew install libmagic`
+- On macOS: `brew install libmagic`
 
 Example :
 -------------------------
@@ -53,3 +54,7 @@ Release :
 *  **09-Dec-2023** : 1.0.2
     - Replace tcl dictionaries by 'cffi::enum'.
     - Cosmetic changes.
+*  **17-Jun-2025** : 1.0.3
+    - Raises the version of `tcl-cffi` to >= 2.0.
+    - Try checking several places for the location of `libmagic` lib.
+    - Tcl 9 supported.

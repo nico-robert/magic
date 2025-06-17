@@ -1,4 +1,4 @@
-# Copyright (c) 2023 Nicolas ROBERT.
+# Copyright (c) 2023-2025 Nicolas ROBERT.
 # Distributed under MIT license. Please see LICENSE for details.
 # magic - Tcl bindings for libmagic (https://manned.org/libmagic.3).
 
@@ -9,14 +9,18 @@
 # 09-Dec-2023  : v1.0.2 
                # Replace tcl dictionaries by 'cffi::enum'.
                # Cosmetic changes.
+# 15-Jun-2025  : v1.0.3
+               # Raises the version of tcl-cffi to >= 2.0.
+               # Try checking several places for the location of `libmagic` lib.
+               # Tcl 9 supported.
 
-package require Tcl  8.6
-package require cffi 1.0
+package require Tcl  8.6-
+package require cffi 2.0
 
 namespace eval magic {
     variable  libname "libmagic"
     variable  libmagicversion 545
-    variable  version 1.0.2
+    variable  version 1.0.3
     namespace export magic ; # export class
 }
 
@@ -98,14 +102,31 @@ proc magic::flags {} {
     return $flags
 }
 
+# Try checking several places.
+set lib_names [subst {
+    $::magic::libname
+    $::magic::libname.1
+    /usr/local/lib/$::magic::libname
+    /usr/local/lib/$::magic::libname.1
+    $::magic::libname.$::magic::libmagicversion
+    $::magic::libname-$::magic::libmagicversion
+}]
+
+set lib_found 0
+set lname {}
+
 # Loading the library.
-if {[catch {
-    cffi::Wrapper create MAGIC $::magic::libname-$::magic::libmagicversion[info sharedlibextension]
-}]} {
-    # Could not find the version-labeled library.
-    # Load without version.
-    cffi::Wrapper create MAGIC $::magic::libname[info sharedlibextension]
+foreach name $lib_names {
+    if {![catch {
+        cffi::Wrapper create MAGIC ${name}[info sharedlibextension]
+    } err]
+    } {
+        set lib_found 1; break
+    }; lappend lname $err
 }
+
+# Generate error message if lib not found.
+if {!$lib_found} {return -code error [join $lname \n]}
 
 cffi::alias load C
 
