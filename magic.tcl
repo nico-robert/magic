@@ -13,15 +13,112 @@
                # Raises the version of tcl-cffi to >= 2.0.
                # Try checking several places for the location of `libmagic` lib.
                # Tcl 9 supported.
+# 04-Aug-2025 : v1.0.4
+               # Enhanced cross-platform library search functionality.
+               # The minimum supported libmagic version is now `5.45`.
+               # Support for multiple versions of libmagic until `5.46`.
+               # Adds `-path` option in arguments of constructor to load a specific magic database.
+               # Windows support.
 
 package require Tcl  8.6-
 package require cffi 2.0
 
 namespace eval magic {
-    variable  libname "libmagic"
-    variable  libmagicversion 545
-    variable  version 1.0.3
+    variable libmagicMinVersion 545
+    variable version 1.0.4
+    variable packageDirectory [file dirname [file normalize [info script]]]
+    variable supportedMagicVersions [list 5.45 545 5.46 546]
+
     namespace export magic ; # export class
+
+    proc load_magic {} {
+        # Locates and loads the magic shared library
+        #
+        # Tries in order
+        #   - the system default search path
+        #   - platform specific subdirectories under the package directory
+        #   - the toplevel package directory
+        #   - the directory where the main program is installed
+        # If all fail, simply tries the name as is in which case the
+        # system will look up in the standard shared library search path.
+        #
+        # On success, creates the MAGIC cffi::Wrapper object in the global
+        # namespace.
+
+        variable packageDirectory
+        variable supportedMagicVersions
+
+        set magicPath {}
+        # First make up list of possible shared library names depending
+        # on platform and supported shared library versions.
+        set ext [info sharedlibextension]
+        if {$::tcl_platform(platform) eq "windows"} {
+            # Names depend on compiler (mingw/vc). VC -> magic, mingw -> libmagic
+            # Examples: magic.dll, libmagic.dll, magicVERSION.dll, magic-VERSION.dll
+            foreach baseName {magic magic-1 libmagic} {
+                foreach magicVersion $supportedMagicVersions {
+                    lappend fileNames \
+                        $baseName$magicVersion$ext \
+                        $baseName-$magicVersion$ext
+                }
+                lappend fileNames $baseName$ext
+            }
+        } else {
+            # Unix: libmagic.so, libmagicVERSION.so, libmagic-VERSION.so, libmagic.so.VERSION
+            foreach magicVersion $supportedMagicVersions {
+                lappend fileNames \
+                    libmagic$magicVersion$ext \
+                    libmagic.$magicVersion$ext \
+                    libmagic-$magicVersion$ext
+            }
+            lappend fileNames libmagic$ext
+        }
+
+        set attempts {}
+
+        # First try the system default search paths by no explicitly
+        # specifying the full path
+        foreach fileName $fileNames {
+            if {![catch {
+                cffi::Wrapper create ::MAGIC $fileName
+            } err]} {
+                return
+            }
+            append attempts $fileName : $err \n
+        }
+
+        # Not on default search path. Look under platform specific directories
+        # under the package directory.
+        package require platform
+        set searchPaths [lmap platform [platform::patterns [platform::identify]] {
+            if {$platform eq "tcl"} {
+                continue
+            }
+            file join $packageDirectory $platform
+        }]
+        # Also look in package directory and location of main executable.
+        # On Windows, the latter is probably redundant but...
+        lappend searchPaths $packageDirectory
+        lappend searchPaths [file dirname [info nameofexecutable]]
+        # Specific case for macOS where the shared library is installed
+        # under '/usr/local/lib'.
+        if {$::tcl_platform(platform) eq "unix"} {
+            set searchPaths [linsert $searchPaths 0 "/usr/local/lib"]
+        }
+        # Now do the actual search over search path for each possible name
+        foreach searchPath $searchPaths {
+            foreach fileName $fileNames {
+                set path [file join $searchPath $fileName]
+                if {![catch {
+                    cffi::Wrapper create ::MAGIC $path
+                } err]} {
+                    return
+                }
+                append attempts $path : $err \n
+            }
+        }
+        return -code error "Failed to load libmagic:\n$attempts"
+    }
 }
 
 proc magic::error {callinfo} {
@@ -33,7 +130,8 @@ proc magic::error {callinfo} {
     if {[dict exists $callinfo In cookie]} {
         set cookie [dict get $callinfo In cookie]
         if {![cffi::pointer isnull $cookie]} {
-            throw MAGIC_ERROR [magic_error $cookie]
+            catch {magic_error $cookie} msg
+            throw MAGIC_ERROR $msg
         }
     } else {
         if {[dict exists $callinfo Command]} {
@@ -103,30 +201,7 @@ proc magic::flags {} {
 }
 
 # Try checking several places.
-set lib_names [subst {
-    $::magic::libname
-    $::magic::libname.1
-    /usr/local/lib/$::magic::libname
-    /usr/local/lib/$::magic::libname.1
-    $::magic::libname.$::magic::libmagicversion
-    $::magic::libname-$::magic::libmagicversion
-}]
-
-set lib_found 0
-set lname {}
-
-# Loading the library.
-foreach name $lib_names {
-    if {![catch {
-        cffi::Wrapper create MAGIC ${name}[info sharedlibextension]
-    } err]
-    } {
-        set lib_found 1; break
-    }; lappend lname $err
-}
-
-# Generate error message if lib not found.
-if {!$lib_found} {return -code error [join $lname \n]}
+magic::load_magic
 
 cffi::alias load C
 
@@ -150,18 +225,19 @@ cffi::enum sequence MagicParam {
 cffi::alias define MAGIC_COOKIE     {pointer.COOKIE  {onerror magic::error}}
 cffi::alias define MAGIC_INT_STATUS {int nonnegative {onerror magic::error}}
 cffi::alias define MAGIC_STR_STATUS {string          {onerror magic::error}}
+cffi::alias define MAGIC_ERR_STATUS {string errno}
 cffi::alias define MAGIC_PARAM      {int             {enum MagicParam}}
 cffi::alias define MAGIC_FLAGS      {int bitmask     {enum MagicFlags} {default MAGIC_NONE}}
 
 # Functions from magic.h
-MAGIC stdcalls {
+MAGIC functions {
     magic_open       MAGIC_COOKIE     {flags MAGIC_FLAGS}
     magic_close      void             {cookie MAGIC_COOKIE}
     magic_getpath    MAGIC_STR_STATUS {filename {string nullifempty} i {int {default 0}}}
     magic_file       MAGIC_STR_STATUS {cookie MAGIC_COOKIE filename string}
     magic_descriptor MAGIC_STR_STATUS {cookie MAGIC_COOKIE fd int}
     magic_buffer     MAGIC_STR_STATUS {cookie MAGIC_COOKIE buffer string len size_t}
-    magic_error      string           {cookie MAGIC_COOKIE}
+    magic_error      MAGIC_ERR_STATUS {cookie MAGIC_COOKIE}
     magic_getflags   MAGIC_INT_STATUS {cookie MAGIC_COOKIE}
     magic_setflags   MAGIC_INT_STATUS {cookie MAGIC_COOKIE flags MAGIC_FLAGS}
     magic_version    int              {}
@@ -177,23 +253,47 @@ MAGIC stdcalls {
 # Gets magic version.
 set libversion [magic_version]
 
-if {$libversion < $::magic::libmagicversion} {
+if {$libversion < $::magic::libmagicMinVersion} {
     error "libmagic version '$libversion' is unsupported.\
-           Minimum version supported '$::magic::libmagicversion'"
+           Minimum version supported '$::magic::libmagicMinVersion'"
+}
+
+if {$libversion > [lindex $::magic::supportedMagicVersions end]} {
+    error "libmagic version '$libversion' is unsupported.\
+           Maximum version supported '[lindex $::magic::supportedMagicVersions end]'"
 }
 
 oo::class create magic::magic {
 
     variable _cookie ; # magic cookie
 
-    constructor {{lflags ""}} {
+    constructor {args} {
         # Initializes a new magic Class.
         #
-        # lflags - list flags (see MagicFlags enum).
+        # args - Options described below.
+        # lflags     - list flags (see MagicFlags enum).
+        # '-path XX' - path to specify the database.
         #
         # The function magic_open() returns a magic cookie on success and NULL on
         # failure setting errno to an appropriate value. It will set errno to EINVAL
         # if an unsupported value for flags was given.
+        set lflags {}
+        set path {}
+        for {set i 0} {$i < [llength $args]} {incr i} {
+            set value [lindex $args $i]
+            switch -exact -- $value {
+                "-path" {
+                    incr i
+                    if {$i < [llength $args]} {
+                        set path [lindex $args $i]
+                    }
+                }
+                default {
+                    set lflags $value
+                }
+            }
+        }
+
         if {![llength $lflags]} {
             set _cookie [magic_open] ; # default MAGIC_NONE
         } else {
@@ -207,8 +307,30 @@ oo::class create magic::magic {
         # that variable is not set, the default database file name is
         # /usr/share/file/misc/magic.  magic_load() adds “.mgc” to the database
         # filename as appropriate.
-        magic_load $_cookie {}
+        set loadmgc {}
+        # Try to load the environment variable first if '-path' is not set.
+        if {[info exists ::env(MAGIC)] && ($path eq "")} {
+            set loadmgc $::env(MAGIC)
+        }
+        
+        # If exists load database according to -path arg.
+        if {$path ne ""} {
+            set loadmgc $path
+        }
 
+        # Load default database.
+        if {$loadmgc eq ""} {
+            set loadmgc [magic_getpath "" 1]
+        }
+
+        try {
+            magic_load $_cookie $loadmgc
+        } trap MAGIC_ERROR {msg} {
+            my destroy
+            error "MAGIC_ERROR : magic_load '$msg'"
+        } on error {result options} {
+            error [dict get $options -errorinfo]
+        }
     }
 
     method fromFile {file} {

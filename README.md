@@ -1,20 +1,19 @@
-magic
-================
+#  magic
+
 Tcl bindings for [libmagic](https://manned.org/libmagic.3).   
 
-Tested on macOS, should be working on Linux.
+## Platform :
+Tested on macOS and Windows, should be working on Linux.
 
-Requirements :
--------------------------
+## Requirements :
 - [Tcl](https://www.tcl.tk/) 8.6 or higher
 - [tcl-cffi](https://cffi.magicsplat.com) >= 2.0
 
-Prerequisites :
--------------------------
+## Prerequisites :
+- On Windows: ` vcpkg install libmagic`
 - On macOS: `brew install libmagic`
 
-Example :
--------------------------
+## Example :
 ```tcl
 package require magic
 
@@ -39,14 +38,15 @@ $mg fromBuffer $data ; # > application/pdf
 # Combined the flags.
 set mg [magic new {MAGIC_MIME_TYPE MAGIC_MIME_ENCODING}]
 $mg fromFile "path/to/file/magic.jpeg" ; # > image/jpeg; charset=binary
+
+# Load database from path (optional).
+set mg [magic new -path "/path/to/magicDatabase"]
 ```
 
-License :
--------------------------
+## License :
 **magic** is covered under the terms of the [MIT](LICENSE) license.
 
-Release :
--------------------------
+## Release :
 *  **29-Oct-2023** : 1.0
     - Initial release.
 *  **02-Nov-2023** : 1.0.1
@@ -58,3 +58,9 @@ Release :
     - Raises the version of `tcl-cffi` to >= 2.0.
     - Try checking several places for the location of `libmagic` lib.
     - Tcl 9 supported.
+*  **04-Aug-2025** : 1.0.4
+    - Enhanced cross-platform library search functionality.
+    - The minimum supported libmagic version is now `5.45`.
+    - Support for multiple versions of libmagic until `5.46`.
+    - Adds `-path` option in arguments of constructor to load a specific magic database.
+    - Windows support.
